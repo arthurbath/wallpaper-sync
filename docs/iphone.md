@@ -29,3 +29,15 @@ The phone and Mac selectors share the same deterministic catalog ordering and ro
 The selected image must decode, have nonzero width, and convert to PNG before application. Empty, missing, or corrupt input stops before the wallpaper setter. A normal Mac invocation of the phone shortcut returns `unsupported_device` without applying it.
 
 A generated file and a passing Mac build do not establish physical iPhone runtime behavior. Framing, locked operation, native scheduling, and wallpaper-pair behavior depend on iOS and the installed device state. Keep any device observations and native references in ignored local records.
+
+## File Access Timeouts
+
+If Shortcuts marks the first Get File from Folder action with `Shortcut Timed Out`, execution stopped while resolving the image directory, before catalog selection or wallpaper application. A successful manual run establishes that the folder and images were accessible at that time. It does not establish that iCloud Drive can resolve the folder during unattended execution.
+
+Inspect Allow Running When Locked in the shortcut's Privacy settings and the folder's download state in Files. Use Keep Downloaded for the project folder or its image catalog. Files may show Show Downloaded Folder when an ancestor already supplies that setting. Download retention reduces dependence on network transfers, but the shortcut still accesses the iCloud file provider. [Apple documents keeping files downloaded](https://support.apple.com/guide/iphone/iphe9aff429a/ios).
+
+For an imported shortcut, reselect the same project root through the iPhone folder picker in both Get File from Folder actions. Preserve the relative paths, existing wallpaper pair, and setup Number. This refreshes the device's folder references, but does not prove that a background timeout is resolved.
+
+Separate scheduled attempts can produce separate failure notifications, including notifications surfaced when Shortcuts is opened. A notification burst alone does not establish duplicate triggers, automatic retries, or their execution times. Inspect the actual automation list before changing the schedule. Turning Notify off does not turn a failed run into a successful wallpaper update.
+
+Validate a repaired shortcut with an unattended scheduled invocation as well as a foreground run. Record the observed conditions and result. A test after opening Files can have a warm file-provider session and does not reproduce an overnight cold session. If background file-access failures persist, a separate catalog under On My iPhone can remove iCloud from the application path, but it requires an explicit refresh process that preserves the shared catalog and original filenames. Treat that as a separate workflow change.
