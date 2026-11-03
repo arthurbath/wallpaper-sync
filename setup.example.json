@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "platforms": ["mac", "iphone"],
+  "folder_binding": ".local/folder-binding.plist",
+  "iphone_poster": null,
+  "output": "Shortcuts",
+  "cache_directory": "Library/Application Support/Wallpaper Sync/Current"
+}
