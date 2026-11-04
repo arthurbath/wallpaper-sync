@@ -71,17 +71,17 @@ def main():
             print('PASS installed production name, icon, bindings, and schedule:', name, flush=True)
 
     settings = fingerprint()['settings']
-    assert run(MAC_NAME) == {'status': 'prepared'}
+    assert run(MAC_NAME) in ({'status': 'prepared'}, {'status': 'already_completed'})
     before = fingerprint()
     assert before['settings'] == settings, 'Mac run modified native wallpaper settings'
-    assert run(MAC_NAME) == {'status': 'prepared'}
+    assert run(MAC_NAME) == {'status': 'already_completed'}
     assert fingerprint() == before, 'Repeated Mac run modified wallpaper settings or cache'
     assert run(IPHONE_NAME) == {'status': 'unsupported_device'}
     assert fingerprint() == before, 'The iOS build modified Mac wallpaper state'
-    print('PASS production Mac application and repeat idempotence; iOS decoding and Mac guard', flush=True)
+    print('PASS production Mac daily completion and repeat skip; iOS decoding and Mac guard', flush=True)
     if options.receipt:
         options.receipt.write_text(json.dumps({'installed': installed, 'icon': ICON,
-            'mac_application': 'prepared', 'repeat_idempotence': True,
+            'mac_application': 'prepared_or_already_completed', 'repeat_daily_skip': True,
             'mac_settings_unchanged': True, 'ios_mac_guard': 'unsupported_device',
             'final_ios_runtime_observed': False}, indent=2) + '\n')
 

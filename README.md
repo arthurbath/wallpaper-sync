@@ -79,6 +79,14 @@ python3 scripts/build_shortcuts.py --record-installation
 
 The result stays in `.local/install.json`. If the recorded installation changes, explicitly use `--replace` to update that record.
 
+## Daily Completion
+
+Each production shortcut saves one value in native Shortcuts storage: The Pacific date of its last successful run. If that date matches today, the shortcut returns `already_completed` before opening the image folder, scanning the catalog, decoding an image, or running the Mac cache writer. There is no separate status file, database, or failure history.
+
+The iPhone shortcut saves the date after Set Wallpaper Photo returns. The Mac shortcut saves it after the cache writer returns successfully. Mac completion means the cache is prepared for native wallpaper rotation, not that every display has rendered the image. Failures and early exits leave the saved date unchanged, allowing a later trigger to try again. A different Pacific date permits a new run without a separate reset automation.
+
+Storage is scoped to each shortcut with Global Value off. Development exports bypass the daily check and do not update the production success value. Changes to the catalog, cache, or wallpaper after a successful run are not checked again that day. Clear `last-successful-pacific-date` in the shortcut's storage view when a deliberate same-day refresh is needed.
+
 ## Mac Installation
 
 Import the signed macOS export. Select the project folder again in its Get File from Folder actions if Shortcuts requests authorization. Allow Running Scripts in Shortcuts is required for the inline Python writer.

@@ -6,7 +6,7 @@
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-The portable suite exercises rotation cycles, cross-cycle repeat prevention, filename ordering, time-zone boundaries, PNG validation, atomic cache replacement, idempotence, invalid-input retention, and symlink refusal. Setup tests cover private configuration, capture from a synthetic native database, generated action parity, and relocation to another checkout.
+The portable suite exercises rotation cycles, cross-cycle repeat prevention, filename ordering, time-zone boundaries, PNG validation, atomic cache replacement, idempotence, invalid-input retention, and symlink refusal. Setup tests cover private configuration, capture from a synthetic native database, generated action parity, and relocation to another checkout. Daily-completion checks inspect both production action graphs to verify that the repeat exit precedes file access, only the successful platform action can record the date, storage is scoped to each shortcut, and development exports do not read or write the success value. These checks do not execute Apple's storage actions.
 
 Portable tests use synthetic image data and native-reference fixtures. They do not read personal Shortcuts data, import exports, run installed shortcuts, contact Apple, or change wallpaper settings.
 

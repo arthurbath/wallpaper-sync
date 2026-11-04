@@ -9,6 +9,7 @@ from cache_image import DEFAULT_CACHE_DIRECTORY
 NAMESPACE = uuid.UUID('210c896b-de91-4e42-9910-a9a10ba219ef')
 MAC_NAME = 'Shuffle Sync Wallpapers (macOS)'
 IPHONE_NAME = 'Shuffle Sync Wallpapers (iOS)'
+SUCCESS_DATE_KEY = 'last-successful-pacific-date'
 ICON = {'WFWorkflowIconStartColor': 255, 'WFWorkflowIconGlyphNumber': 61460}
 
 
@@ -262,9 +263,27 @@ def pacific_day(s, args):
     return label, s.set('day-number', s.floor(s.math(seconds, '÷', 86400)))
 
 
-def emit_catalog(s, binding, args, platform='mac'):
+def daily_success_guard(s):
+    """Stop repeat production runs before accessing the image file provider."""
+    label, day = pacific_day(s, None)
+    previous = s.add('getstoredcontent', WFStoredContentKey=SUCCESS_DATE_KEY,
+                     WFStoredContentGlobalValue=False)
+    # Coerce to text so an empty initial value and ISO dates compare as strings.
+    previous = s.text(previous)
+    completed = s.if_(previous, 4, label)
+    s.stop(s.text('{"status":"already_completed"}'))
+    s.end_if(completed)
+    return label, day
+
+
+def record_daily_success(s, label):
+    s.add('setstoredcontent', WFInput=tokens(label), WFStoredContentKey=SUCCESS_DATE_KEY,
+          WFStoredContentGlobalValue=False)
+
+
+def emit_catalog(s, binding, args, platform='mac', date=None):
     folder = image_folder(s, args)
-    label, day = pacific_day(s, args)
+    label, day = date if date is not None else pacific_day(s, args)
     directory = s.add('documentpicker.open', WFFile=binding, WFGetFilePath=tokens(folder),
                       WFFileErrorIfNotFound=False, WFGetFolderContents=False)
     available = s.if_(directory)
@@ -333,7 +352,7 @@ def emit_catalog(s, binding, args, platform='mac'):
     return names, ordered, label, folder
 
 
-def emit_iphone_application(s, image, selected, poster=None):
+def emit_iphone_application(s, image, selected, poster=None, success_date=None):
     # Diagnostics return before this point. A phone-only final step also protects
     # the Mac if this synced shortcut is run normally on the computer.
     model = s.add('getdevicedetails', WFDeviceDetail='Device Model')
@@ -359,6 +378,8 @@ def emit_iphone_application(s, image, selected, poster=None):
     if poster:
         parameters['WFSelectedPoster'] = poster
     s.add('wallpaper.set', **parameters)
+    if success_date is not None:
+        record_daily_success(s, success_date)
     s.stop(s.text(s.put(selected, 'status', 'applied')) if selected else s.text('{"status":"applied"}'))
 
 
@@ -369,6 +390,7 @@ def build_sync(binding, platform='mac', iphone_poster=None, diagnostics=False,
     s = Shortcut(MAC_NAME if platform == 'mac' else IPHONE_NAME)
     s.accepts_input = diagnostics
     args = arguments(s) if diagnostics else None
+    date = None if diagnostics else daily_success_guard(s)
     if diagnostics:
         # Diagnostic actions are excluded from the installed production exports.
         mode = s.text(s.get(args, 'mode'))
@@ -376,7 +398,7 @@ def build_sync(binding, platform='mac', iphone_poster=None, diagnostics=False,
         s.set('image-count', s.number(s.get(args, 'count')))
         s.set('day-number', s.number(s.get(args, 'day')))
         s.otherwise(diagnostic)
-    names, ordered, label, folder = emit_catalog(s, binding, args, platform)
+    names, ordered, label, folder = emit_catalog(s, binding, args, platform, date)
     if diagnostics:
         s.end_if(diagnostic)
     # Both normal execution and index diagnostics pass through this single copy
@@ -438,13 +460,16 @@ def build_sync(binding, platform='mac', iphone_poster=None, diagnostics=False,
         s.end_if(dry_run)
     image = s.add('getitemfromlist', WFInput=images, WFItemSpecifier='First Item')
     if platform == 'iphone':
-        emit_iphone_application(s, image, selected, iphone_poster)
+        emit_iphone_application(s, image, selected, iphone_poster,
+                                success_date=None if diagnostics else label)
     else:
         cache_source = Path(__file__).with_name('cache_image.py').read_text()
         script = ("/usr/bin/python3 - --cache-directory " + shlex.quote(cache_directory) +
                   " \"$@\" <<'WALLPAPER_PYTHON'\n" + cache_source + "\nWALLPAPER_PYTHON\n")
         s.add('runshellscript', Script=script, Input=image,
               InputMode='as arguments', UUID='3ACB2822-4965-44B2-A4E2-CC332C38956B')
+        if not diagnostics:
+            record_daily_success(s, label)
         s.stop(s.text(s.put(selected, 'status', 'prepared')) if selected else s.text('{"status":"prepared"}'))
     return s
 

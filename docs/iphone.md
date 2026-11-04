@@ -18,7 +18,7 @@ Apple may require local device permission even when a folder reference was captu
 
 Add Time of Day automation triggers for the desired schedule. For hourly checks, add 24 daily entries at minute `00`. Turn Notify off where offered and allow running when locked. A Charger → Is Connected trigger can add another refresh opportunity.
 
-Each invocation computes the current Pacific selection. Missed days do not require replaying earlier selections. Powered-off devices, unavailable iCloud files, and system scheduling restrictions can delay a refresh.
+Each invocation checks the current Pacific date against the shortcut's saved success date before accessing iCloud Drive. After one successful application, later invocations that day return `already_completed`. If an attempt fails, later triggers can still try again. Missed days do not require replaying earlier selections. Powered-off devices, unavailable iCloud files, and system scheduling restrictions can delay a refresh.
 
 The build process generates actions. It does not install native triggers, grant permissions, or configure the phone's wallpaper pair. [Apple documents native automation triggers and locked execution](https://support.apple.com/guide/shortcuts/apdfbdbd7123/ios).
 
